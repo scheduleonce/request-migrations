@@ -42,13 +42,13 @@ npm install @oncehub/request-migrations
 
 1.  **Define your migrations:**
 
-    Create a `migrations` directory in your project. Inside, create `.ts` (or `.js`) files for each migration, following the naming convention:
+    Create a `migrations` directory in your project. Inside, create `.ts` files for each migration, following the naming convention:
 
     ```
-    <migration-description>.ts
+    <migration-description>.migration.ts
     ```
 
-    Example: `separate-user-name-to-first-and-last-name.ts`
+    Example: `split-user-name.migration.ts`
 
     Each migration file should export a `Migration` object:
 
@@ -85,7 +85,7 @@ npm install @oncehub/request-migrations
 
 2.  **Integrate the middleware into your Express app:**
 
-    ```typescript
+    ```ts
     import express from "express";
     import { requestMigrationMiddleware } from "@oncehub/request-migrations";
     import path from "path";
@@ -130,9 +130,9 @@ New API (version >= 2024-06-15):
 
 Write a migration file:
 
-**`migrations/separate-user-name-to-first-and-last-name.ts`:**
+**`migrations/split-user-name-to-first-and-last-name.migration.ts`:**
 
-```typescript
+```ts
 import { Request } from "express";
 import { Migration } from "@oncehub/request-migrations";
 
@@ -186,7 +186,7 @@ This library was inspired by the following blog posts and other equivalent libra
 
 - https://stripe.com/blog/api-versioning
 - https://getconvoy.io/blog/rolling-versions
-- https://www.intercom.com/blog/api-versioning/
+- https://www.intercom.com/blog/api-versioning
 - https://github.com/keygen-sh/request_migrations (Ruby)
 - https://github.com/subomi/requestmigrations (Golang)
 - https://github.com/tomschlick/request-migrations (Ruby)

@@ -65,7 +65,7 @@ describe("requestMigrationMiddleware", () => {
     assert.deepStrictEqual(body, payload);
   });
 
-  it.skip("should apply only one migration", async () => {
+  it("should apply only one migration", async () => {
     const payload = {
       user: {
         accountType: data.user.accountType,
@@ -86,7 +86,7 @@ describe("requestMigrationMiddleware", () => {
     assert.deepStrictEqual(body, payload);
   });
 
-  it.skip("should not apply any migration for an up-to-date client", async () => {
+  it("should not apply any migration for an up-to-date client", async () => {
     const payload = structuredClone(data);
     const { statusCode, body } = await makeRequest(
       "POST",

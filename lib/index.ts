@@ -28,7 +28,7 @@ export const requestMigrationMiddleware = async (
     const files = await fs.readdir(migrationsDir);
 
     for (const file of files) {
-      if (file.endsWith(".ts")) {
+      if (file.endsWith(".migration.ts")) {
         const filePath = path.join(migrationsDir, file);
 
         try {
@@ -101,7 +101,7 @@ export const requestMigrationMiddleware = async (
           return originalSend.call(this, body);
         }
 
-        return new Promise(async (resolve) => {
+        (async () => {
           let dataToMigrate = body;
 
           if (typeof body === "string") {
@@ -119,18 +119,16 @@ export const requestMigrationMiddleware = async (
             dataToMigrate = await migration.migrateResponse(req, dataToMigrate);
           }
 
-          resolve(dataToMigrate);
-        })
-          .then((migratedData) => {
-            const finalBody = JSON.stringify(migratedData);
-            originalSend.call(this, finalBody);
-          })
-          .catch((error) => {
-            console.error("Error during response migration:", error);
-            originalSend.call(this, {
-              error: "Internal Server Error: Migration failed",
-            });
+          const finalBody = JSON.stringify(dataToMigrate);
+          originalSend.call(this, finalBody);
+        })().catch((error) => {
+          console.error("Error during response migration:", error);
+          originalSend.call(this, {
+            error: "Internal Server Error: Migration failed",
           });
+        });
+
+        return res;
       };
 
       next();

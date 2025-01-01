@@ -1,12 +1,13 @@
 import { Request } from "express";
 import { Migration } from "@lib";
+import { singleCallWrapper } from "./single-call";
 
 const migration: Migration = {
   path: "/api/users/:id",
   verbs: "POST|GET",
   version: "2023-06-15",
   description: "Split user name to first and last name",
-  migrateRequest: async (req: Request) => {
+  migrateRequest: singleCallWrapper(async (req: Request) => {
     if (
       req.body.user &&
       req.body.user.name &&
@@ -20,8 +21,8 @@ const migration: Migration = {
     }
 
     return req;
-  },
-  migrateResponse: async (req: Request, body: any) => {
+  }, "migrateRequest"),
+  migrateResponse: singleCallWrapper(async (req: Request, body: any) => {
     if (body.user.firstName && body.user.lastName) {
       body.user.name = `${body.user.firstName} ${body.user.lastName}`;
       delete body.user.firstName;
@@ -29,7 +30,7 @@ const migration: Migration = {
     }
 
     return body;
-  },
+  }, "migrateResponse"),
 };
 
 export default migration;
