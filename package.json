@@ -1,0 +1,54 @@
+{
+  "name": "@oncehub/request-migrations",
+  "version": "1.0.0",
+  "description": "A Node.js middleware library for Express to simplify API versioning by enabling smooth migrations of requests and responses.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "tsx --test --experimental-test-coverage --enable-source-maps test/**/*.spec.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scheduleonce/request-migrations.git"
+  },
+  "keywords": [
+    "api",
+    "versioning",
+    "middleware",
+    "express",
+    "nodejs",
+    "typescript",
+    "migration",
+    "backward-compatibility"
+  ],
+  "author": "Michael DeRazon",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/scheduleonce/request-migrations/issues"
+  },
+  "homepage": "https://github.com/scheduleonce/request-migrations#readme",
+  "dependencies": {
+    "express": "^4.17.21",
+    "path-to-regexp": "^8.2.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.17",
+    "@types/node": "^22.10.2",
+    "tsx": "^4.7.0",
+    "typescript": "^5.1.6"
+  },
+  "peerDependencies": {
+    "express": ">=4.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
