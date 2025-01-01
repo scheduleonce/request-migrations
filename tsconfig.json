@@ -10,6 +10,7 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "declaration": true,
+    "declarationMap": true,
     "sourceMap": true,
     "baseUrl": ".",
     "paths": {
@@ -17,6 +18,6 @@
       "@lib": ["lib/index"]
     }
   },
-  "include": ["lib/**/*", "test/**/*"],
-  "exclude": ["node_modules", "dist"]
+  "include": ["lib/**/*"],
+  "exclude": ["node_modules", "dist", "test/**/*"]
 }
