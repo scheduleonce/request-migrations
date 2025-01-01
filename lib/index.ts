@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from "express";
 import { promises as fs } from "fs";
 import path from "path";
 import { pathToRegexp } from "path-to-regexp";
+import util from "util";
+const debuglog = util.debuglog("request-migrations");
 
 export interface Migration {
   path: string;
@@ -46,7 +48,7 @@ export const requestMigrationMiddleware = async (
         }
       }
     }
-    console.debug(
+    debuglog(
       "Migrations loaded:",
       migrations.map((m) => m.migration.version)
     );
@@ -76,19 +78,20 @@ export const requestMigrationMiddleware = async (
         compareVersions(a.version, b.version)
       );
 
-      console.debug(
+      debuglog(
         "Request migrations to apply:",
         requestMigrationsToApply.map((m) => m.version)
       );
 
       for (const migration of requestMigrationsToApply) {
+        debuglog("Applying request migration:", migration.version);
         req = await migration.migrateRequest(req);
       }
 
       const responseMigrationsToApply = endpointMigrations.sort((a, b) =>
         compareVersions(b.version, a.version)
       );
-      console.debug(
+      debuglog(
         "Response migrations to apply:",
         responseMigrationsToApply.map((m) => m.version)
       );
@@ -115,7 +118,7 @@ export const requestMigrationMiddleware = async (
           }
 
           for (const migration of responseMigrationsToApply) {
-            console.debug("Applying response migration:", migration.version);
+            debuglog("Applying response migration:", migration.version);
             dataToMigrate = await migration.migrateResponse(req, dataToMigrate);
           }
 

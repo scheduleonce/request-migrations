@@ -180,6 +180,16 @@ export default migration;
 - **`migrateRequest`:** (`(req: Request) => Promise<Request>`) An async function that migrates the request object.
 - **`migrateResponse`:** (`(req: Request, body: any) => Promise<any>`) An async function that migrates the response body. It receives the potentially modified `req` object as its first argument.
 
+## Debug Logs
+
+To see debug logs from the middleware, set the `NODE_DEBUG` environment variable:
+
+```sh
+NODE_DEBUG=request-migrations node your-app.js
+```
+
+This will print detailed information about which migrations are being loaded and applied.
+
 ## Acknowledgements
 
 This library was inspired by the following blog posts and other equivalent libraries in other languages:
