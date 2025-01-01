@@ -57,22 +57,25 @@ export const requestMigrationMiddleware = async (
     try {
       const httpVerb = req.method.toUpperCase();
       const requestPath = req.path;
+      const requestedVersion = (req.headers[versionHeaderName] || "") as string;
 
-      // filter migrations that match the request path and verb
       const endpointMigrations = migrations
+        // filter migrations that match the request path and verb
         .filter((m) => {
           return m.verbsRegex.test(httpVerb) && m.pathRegex.test(requestPath);
         })
+        // filter migrations that are newer than the requested version
+        .filter(
+          (m) =>
+            requestedVersion &&
+            compareVersions(m.migration.version, requestedVersion) > 0
+        )
         .map((m) => m.migration);
 
-      const requestedVersion = (req.headers[versionHeaderName] || "") as string;
-
-      endpointMigrations.sort((a, b) => compareVersions(a.version, b.version));
-
-      const requestMigrationsToApply = endpointMigrations.filter(
-        (m) =>
-          requestedVersion && compareVersions(m.version, requestedVersion) > 0
+      const requestMigrationsToApply = endpointMigrations.sort((a, b) =>
+        compareVersions(a.version, b.version)
       );
+
       console.debug(
         "Request migrations to apply:",
         requestMigrationsToApply.map((m) => m.version)
@@ -82,56 +85,53 @@ export const requestMigrationMiddleware = async (
         req = await migration.migrateRequest(req);
       }
 
+      const responseMigrationsToApply = endpointMigrations.sort((a, b) =>
+        compareVersions(b.version, a.version)
+      );
+      console.debug(
+        "Response migrations to apply:",
+        responseMigrationsToApply.map((m) => m.version)
+      );
       const originalSend = res.send.bind(res);
       res.send = function (this: Response, body: any): Response {
         const contentType = res.getHeader("Content-Type");
         const isJson = contentType?.toString().includes("application/json");
 
-        let responseBody = body;
-
-        if (isJson && typeof body === "string") {
-          try {
-            responseBody = JSON.parse(body);
-          } catch (error) {
-            return originalSend.call(this, {
-              error: "Internal Server Error: Invalid response body",
-            });
-          }
+        if (!isJson) {
+          return originalSend.call(this, body);
         }
 
-        const responseMigrationsToApply = endpointMigrations
-          .filter(
-            (m) =>
-              !requestedVersion ||
-              compareVersions(m.version, requestedVersion) > 0
-          )
-          .sort((a, b) => compareVersions(b.version, a.version));
-        console.debug(
-          "Response migrations to apply:",
-          responseMigrationsToApply.map((m) => m.version)
-        );
+        return new Promise(async (resolve) => {
+          let dataToMigrate = body;
 
-        const applyMigrations = async (data: any) => {
-          let migratedData = data;
+          if (typeof body === "string") {
+            try {
+              dataToMigrate = JSON.parse(body);
+            } catch (error) {
+              return originalSend.call(this, {
+                error: "Internal Server Error: Invalid response body",
+              });
+            }
+          }
+
           for (const migration of responseMigrationsToApply) {
-            migratedData = await migration.migrateResponse(req, migratedData);
+            console.debug("Applying response migration:", migration.version);
+            dataToMigrate = await migration.migrateResponse(req, dataToMigrate);
           }
-          return migratedData;
-        };
 
-        if (isJson) {
-          applyMigrations(responseBody).then((migratedBody) => {
-            const finalBody = JSON.stringify(migratedBody);
-            return originalSend.call(this, finalBody);
+          resolve(dataToMigrate);
+        })
+          .then((migratedData) => {
+            const finalBody = JSON.stringify(migratedData);
+            originalSend.call(this, finalBody);
+          })
+          .catch((error) => {
+            console.error("Error during response migration:", error);
+            originalSend.call(this, {
+              error: "Internal Server Error: Migration failed",
+            });
           });
-        } else {
-          applyMigrations(responseBody).then((migratedBody) => {
-            return originalSend.call(this, migratedBody);
-          });
-        }
-
-        return this;
-      } as any;
+      };
 
       next();
     } catch (error) {
@@ -139,8 +139,7 @@ export const requestMigrationMiddleware = async (
         "Error during middleware initialization or request migration:",
         error
       );
-      // Depending on your needs, you might want to handle errors differently here.
-      // For example, you could prevent the server from starting if migrations fail to load.
+
       res.status(500).send({
         error:
           "Internal Server Error: Failed to initialize or apply migrations",
