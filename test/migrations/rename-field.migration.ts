@@ -1,6 +1,8 @@
 import { Request } from "express";
 import { Migration } from "@lib";
 import { singleCallWrapper } from "./single-call";
+import path from "node:path";
+const filename = path.parse(__filename).name;
 
 const migration: Migration = {
   path: "/api/users/:id",
@@ -13,14 +15,14 @@ const migration: Migration = {
       delete req.body.user.account_type;
     }
     return req;
-  }, "migrateRequest"),
+  }, `${filename}:migrateRequest`),
   migrateResponse: singleCallWrapper(async (req: Request, body: any) => {
     if (body.user?.accountType) {
       body.user.account_type = body.user.accountType;
       delete body.user.accountType;
     }
     return body;
-  }, "migrateResponse"),
+  }, `${filename}:migrateResponse`),
 };
 
 export default migration;

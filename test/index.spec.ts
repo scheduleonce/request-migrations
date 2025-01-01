@@ -1,9 +1,10 @@
-import { describe, it, before, after } from "node:test";
+import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
 import express, { Request, Response } from "express";
 import { requestMigrationMiddleware } from "@lib";
 import path from "path";
 import http from "http";
+import { resetSingleCallWrapper } from "./migrations/single-call";
 
 const migrationsDir = path.join(__dirname, "migrations");
 
@@ -45,6 +46,10 @@ describe("requestMigrationMiddleware", () => {
 
   after(() => {
     server?.close();
+  });
+
+  beforeEach(() => {
+    resetSingleCallWrapper();
   });
 
   it("should apply all migrations for an older client", async () => {
