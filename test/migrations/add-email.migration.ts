@@ -1,6 +1,6 @@
 import { Request } from "express";
 import { Migration } from "@lib";
-import { singleCallWrapper } from "./single-call";
+import { singleCallWrapper } from "../single-call";
 import path from "node:path";
 const filename = path.parse(__filename).name;
 

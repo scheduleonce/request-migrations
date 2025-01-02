@@ -4,7 +4,7 @@ import express, { Request, Response } from "express";
 import { requestMigrationMiddleware } from "@lib";
 import path from "path";
 import http from "http";
-import { resetSingleCallWrapper } from "./migrations/single-call";
+import { resetSingleCallWrapper } from "./single-call";
 
 const migrationsDir = path.join(__dirname, "migrations");
 
