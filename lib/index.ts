@@ -39,12 +39,16 @@ export const requestMigrationMiddleware = async (
 
           const { regexp: pathRegex } = pathToRegexp(migration.path);
           const verbsRegex = new RegExp(migration.verbs);
+          if (!migration.migrateRequest || !migration.migrateResponse) {
+            throw new Error(
+              `Migration ${file} is missing migrateRequest or migrateResponse function`
+            );
+          }
 
           migrations.push({ migration, pathRegex, verbsRegex });
         } catch (error) {
-          console.error(`Error loading migration from ${filePath}:`, error);
-          // Consider throwing the error here or handling it differently
-          // to prevent the server from starting with incomplete migrations
+          debuglog(`Error loading migration from ${filePath}:`, error);
+          throw error;
         }
       }
     }
@@ -111,6 +115,8 @@ export const requestMigrationMiddleware = async (
             try {
               dataToMigrate = JSON.parse(body);
             } catch (error) {
+              console.error("Error parsing response body:", error);
+              res.status(500);
               return originalSend.call(this, {
                 error: "Internal Server Error: Invalid response body",
               });
@@ -126,9 +132,8 @@ export const requestMigrationMiddleware = async (
           originalSend.call(this, finalBody);
         })().catch((error) => {
           console.error("Error during response migration:", error);
-          originalSend.call(this, {
-            error: "Internal Server Error: Migration failed",
-          });
+          res.status(500);
+          return originalSend.call(this, { error: "Internal Server Error" });
         });
 
         return res;
@@ -136,14 +141,10 @@ export const requestMigrationMiddleware = async (
 
       next();
     } catch (error) {
-      console.error(
-        "Error during middleware initialization or request migration:",
-        error
-      );
+      console.error("Error during request or response migration:", error);
 
       res.status(500).send({
-        error:
-          "Internal Server Error: Failed to initialize or apply migrations",
+        error: "Internal Server Error: Failed to apply migrations",
       });
     }
   };
