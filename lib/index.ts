@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
-import { promises as fs } from "fs";
-import path from "path";
+import path, { basename } from "path";
+import { readdir, stat } from "fs/promises";
+
 import { pathToRegexp } from "path-to-regexp";
 import util from "util";
 const debuglog = util.debuglog("request-migrations");
@@ -27,7 +28,7 @@ export const requestMigrationMiddleware = async (
   }[] = [];
 
   const loadMigrations = async () => {
-    const files = await fs.readdir(migrationsDir);
+    const files = await getFiles(migrationsDir);
 
     for (const file of files) {
       if (file.endsWith(".migration.ts")) {
@@ -149,3 +150,13 @@ export const requestMigrationMiddleware = async (
     }
   };
 };
+
+async function getFiles(path: string): Promise<string[]> {
+  const stats = await stat(path);
+
+  if (stats.isDirectory()) {
+    return readdir(path);
+  } else {
+    return [basename(path)];
+  }
+}
