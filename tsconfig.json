@@ -18,6 +18,6 @@
       "@lib": ["lib/index"]
     }
   },
-  "include": ["lib/**/*"],
-  "exclude": ["node_modules", "dist", "test/**/*"]
+  "include": ["lib/**/*", "test/**/*"],
+  "exclude": ["node_modules", "dist"]
 }
