@@ -28,8 +28,7 @@ export const requestMigrationMiddleware = async (
   }[] = [];
 
   const loadMigrations = async () => {
-    const files = await getFiles(migrationsDir);
-
+    const files = await readdir(migrationsDir);
     for (const file of files) {
       if (file.endsWith(".migration.ts")) {
         const filePath = path.join(migrationsDir, file);
@@ -150,13 +149,3 @@ export const requestMigrationMiddleware = async (
     }
   };
 };
-
-async function getFiles(path: string): Promise<string[]> {
-  const stats = await stat(path);
-
-  if (stats.isDirectory()) {
-    return readdir(path);
-  } else {
-    return [basename(path)];
-  }
-}

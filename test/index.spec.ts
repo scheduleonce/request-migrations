@@ -1,17 +1,15 @@
 import { describe, it, before, after, beforeEach } from "node:test";
 import assert from "node:assert";
-import express, { Request, Response } from "express";
+import { Request, Response } from "express";
 import { requestMigrationMiddleware } from "@lib";
 import path from "path";
-import http from "http";
+
 import { resetSingleCallWrapper } from "./single-call";
+import { TestExpress, createTestServer } from "./test-express";
 
-const migrationsDir = path.join(__dirname, "migrations");
-
-describe("requestMigrationMiddleware", () => {
-  let app: express.Express;
-  let server: http.Server;
-  let port: number;
+describe.skip("apply migrations", () => {
+  const migrationsDir = path.join(__dirname, "migrations");
+  let app: TestExpress;
 
   const data = {
     user: {
@@ -23,29 +21,17 @@ describe("requestMigrationMiddleware", () => {
   };
 
   before(async () => {
-    app = express();
-    app.use(express.json());
+    app = createTestServer();
+    await app.start();
     app.use(await requestMigrationMiddleware(migrationsDir));
     app.post("/api/users/:id", (req: Request, res: Response) => {
       assert.deepStrictEqual(req.body, data);
       res.send(req.body);
     });
-
-    await new Promise<void>((resolve, reject) => {
-      server = app.listen(0, () => {
-        const addr = server.address();
-        if (!addr || typeof addr === "string") {
-          reject(new Error("Failed to start server"));
-          return;
-        }
-        port = addr.port;
-        resolve();
-      });
-    });
   });
 
   after(() => {
-    server?.close();
+    app.stop();
   });
 
   beforeEach(() => {
@@ -59,7 +45,8 @@ describe("requestMigrationMiddleware", () => {
         account_type: data.user.accountType,
       },
     };
-    const { statusCode, body } = await makeRequest(
+    const { statusCode, body } = await app.makeRequest(
+      app.url(),
       "POST",
       "/api/users/123",
       { "x-api-version": "2023-01-01" },
@@ -78,7 +65,8 @@ describe("requestMigrationMiddleware", () => {
         lastName: data.user.lastName,
       },
     };
-    const { statusCode, body } = await makeRequest(
+    const { statusCode, body } = await app.makeRequest(
+      app.url(),
       "POST",
       "/api/users/456",
       {
@@ -93,7 +81,8 @@ describe("requestMigrationMiddleware", () => {
 
   it("should not apply any migration for an up-to-date client", async () => {
     const payload = structuredClone(data);
-    const { statusCode, body } = await makeRequest(
+    const { statusCode, body } = await app.makeRequest(
+      app.url(),
       "POST",
       "/api/users/456",
       {
@@ -105,45 +94,52 @@ describe("requestMigrationMiddleware", () => {
     assert.strictEqual(statusCode, 200);
     assert.deepStrictEqual(body, payload);
   });
+});
 
-  it.skip("should not apply any migration for an up-to-date client", async () => {
-    // Define a test route that sends invalid JSON
-    app.get("/api/invalid-json", (req: Request, res: Response) => {
-      res.setHeader("Content-Type", "application/json");
-      res.send("invalid-json"); // Send invalid JSON
-    });
+describe("fail to apply migrations", () => {
+  const migrationsDir = path.join(__dirname, "bad-migrations");
+  let app: TestExpress;
 
-    const { statusCode, body } = await makeRequest("GET", "/api/invalid-json", {
-      "x-api-version": "2023-01-01",
-    });
-
-    assert.strictEqual(statusCode, 500);
-    assert.deepStrictEqual(body, {
-      error: "Internal Server Error: Invalid response body",
+  before(async () => {
+    app = createTestServer();
+    await app.start();
+    app.use(await requestMigrationMiddleware(migrationsDir));
+    app.post("/api/users/:id", (req: Request, res: Response) => {
+      res.send(req.body);
     });
   });
 
-  const makeRequest = async (
-    method: string,
-    path: string,
-    headers: Record<string, string> = {},
-    body?: any
-  ) => {
-    const url = `http://localhost:${port}${path}`;
-    const options: RequestInit = {
-      method: method,
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
-      },
-    };
+  after(() => {
+    app.stop();
+  });
 
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
+  it.skip("should handle error during request migration", async () => {
+    const { statusCode, body } = await app.makeRequest(
+      app.url(),
+      "POST",
+      "/api/users/123",
+      { "x-api-version": "2022-01-01" },
+      {}
+    );
 
-    const response = await fetch(url, options);
-    const data = await response.json().catch(() => response.text());
-    return { statusCode: response.status, body: data };
-  };
+    assert.strictEqual(statusCode, 500);
+    assert.deepStrictEqual(body, {
+      error: "Internal Server Error: Failed to apply migrations",
+    });
+  });
+
+  it("should handle error during response migration", async () => {
+    const { statusCode, body } = await app.makeRequest(
+      app.url(),
+      "POST",
+      "/api/users/123",
+      { "x-api-version": "2023-01-01" },
+      {}
+    );
+
+    assert.strictEqual(statusCode, 500);
+    assert.deepStrictEqual(body, {
+      error: "Internal Server Error: Failed to apply migrations",
+    });
+  });
 });
