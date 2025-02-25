@@ -7,7 +7,7 @@ import path from "path";
 import { resetSingleCallWrapper } from "./single-call";
 import { TestExpress, createTestServer } from "./test-express";
 
-describe.skip("apply migrations", () => {
+describe("apply migrations", () => {
   const migrationsDir = path.join(__dirname, "migrations");
   let app: TestExpress;
 
@@ -113,7 +113,7 @@ describe("fail to apply migrations", () => {
     app.stop();
   });
 
-  it.skip("should handle error during request migration", async () => {
+  it("should handle error during request migration", async () => {
     const { statusCode, body } = await app.makeRequest(
       app.url(),
       "POST",
@@ -139,7 +139,8 @@ describe("fail to apply migrations", () => {
 
     assert.strictEqual(statusCode, 500);
     assert.deepStrictEqual(body, {
-      error: "Internal Server Error: Failed to apply migrations",
+      error:
+        "Failed to apply migrations: This migration intentionally throws an error",
     });
   });
 });

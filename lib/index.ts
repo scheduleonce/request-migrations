@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import path, { basename } from "path";
-import { readdir, stat } from "fs/promises";
+import path from "path";
+import { readdir } from "fs/promises";
 
 import { pathToRegexp } from "path-to-regexp";
 import util from "util";
@@ -133,7 +133,10 @@ export const requestMigrationMiddleware = async (
         })().catch((error) => {
           console.error("Error during response migration:", error);
           res.status(500);
-          return originalSend.call(this, { error: "Internal Server Error" });
+          res.send = originalSend;
+          return originalSend.call(this, {
+            error: `Failed to apply migrations: ${error.message}`,
+          });
         });
 
         return res;
