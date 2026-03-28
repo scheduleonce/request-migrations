@@ -48,6 +48,6 @@
     "access": "public"
   },
   "dependencies": {
-    "path-to-regexp": "^8.2.0"
+    "path-to-regexp": "^8.4.0"
   }
 }
